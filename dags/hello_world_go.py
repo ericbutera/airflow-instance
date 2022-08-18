@@ -22,8 +22,9 @@ with DAG(
     )
 
     hello_go = DockerOperator(
+        # TODO: make configurable
         task_id='hello_world_go',
-        image="ericbutera/airflow-hello-world-go",
+        image="ericbutera/airflow-hello-world-go:0.0.1",
         network_mode="bridge",
         # cludy hack https://onedevblog.com/how-to-fix-a-permission-denied-when-using-dockeroperator-in-airflow/
         docker_url="tcp://docker-proxy:2375",

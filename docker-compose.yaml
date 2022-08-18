@@ -275,7 +275,8 @@ services:
         condition: service_completed_successfully
   docker-proxy:
     # cludy hack https://onedevblog.com/how-to-fix-a-permission-denied-when-using-dockeroperator-in-airflow/
-    image: bobrik/socat
+    # TODO: configurable ports
+    image: bobrik/socat:alpine-3.1
     command: "TCP4-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock"
     ports:
       - "2376:2375"
