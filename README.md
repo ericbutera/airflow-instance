@@ -13,6 +13,7 @@ Navigate to <http://localhost:8080>. Creds: `admin:admin`
 ## Resources
 
 - [Data Engineering w/ GCP](https://github.com/PacktPublishing/Data-Engineering-with-Google-Cloud-Platform)
+- [Data Pipelines w/ Airflow](https://github.com/BasPH/data-pipelines-with-apache-airflow)
 - [Docs](https://airflow.apache.org/docs/)
 
 ## Research
@@ -27,9 +28,14 @@ Navigate to <http://localhost:8080>. Creds: `admin:admin`
 - JSONLines or something like [avro](https://avro.apache.org/), [capacitor](https://cloud.google.com/blog/products/bigquery/inside-capacitor-bigquerys-next-generation-columnar-storage-format)
 - [PubSub](https://cloud.google.com/pubsub/architecture)
   - _send over 500 million messages per second_
-- [DockerOperator](https://marclamberti.com/blog/how-to-use-dockeroperator-apache-airflow/)
-  - code can use poetry & nice tests; won't affect server
-  - move to k8s cluster
+- [Running tasks in containers 10.3.2](https://livebook.manning.com/book/data-pipelines-with-apache-airflow/chapter-10/v-4/)
+  - easier dep management
+  - uniform approach for different tasks
+  - improved testability
+- [airflow go client](https://github.com/apache/airflow-client-go)
+  - if running in container, any language is possible
+  - from scratch extremely small binaries!
+  - can integrate with airflow via OpenAPI spec
 
 ## Operators
 

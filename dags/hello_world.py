@@ -3,7 +3,7 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.utils.dates import days_ago
 
 args = {
-    'owner': 'packt-developer',
+    'owner': 'eb',
 }
 
 with DAG(
