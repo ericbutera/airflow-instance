@@ -40,3 +40,9 @@ Navigate to <http://localhost:8080>. Creds: `admin:admin`
 ## Operators
 
 - [airflow.providers.google.cloud.transfers.gcs_to_bigquery](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/_api/airflow/providers/google/cloud/transfers/gcs_to_bigquery/index.html)
+
+## Hello World Go DAG
+
+In order to get docker operator working on Mac, some work-arounds were employed. The docker socket needed to be [wrapped in a service](https://onedevblog.com/how-to-fix-a-permission-denied-when-using-dockeroperator-in-airflow/).
+
+![Successful Run](/docs/hello_world_go_run.png)
