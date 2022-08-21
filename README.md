@@ -18,6 +18,7 @@ Navigate to <http://localhost:8080>. Creds: `admin:admin`
 
 ## Research
 
+- [Kubernetes](https://airflow.apache.org/docs/apache-airflow/stable/kubernetes.html)
 - [Querying Cloud Storage data](https://cloud.google.com/bigquery/docs/external-data-cloud-storage)
   - [federated queries](https://cloud.google.com/bigquery/docs/federated-queries-intro)
   - [see ETL, EL, and ELT in What is Google BigQuery](https://www.oreilly.com/library/view/google-bigquery-the/9781492044451/ch01.html#what_is_google_bigqueryquestion_mark)
