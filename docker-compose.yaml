@@ -59,10 +59,17 @@ x-airflow-common:
     AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    DATA_DIR: ${PWD}/data
+    # TODO: find a way to load .env, maybe it does?
+    NISTY_GCP_PROJECT: ${NISTY_GCP_PROJECT}
+    NISTY_GCP_DATA_SET: ${NISTY_GCP_DATA_SET}
+    NISTY_GCP_BUCKET: ${NISTY_GCP_BUCKET}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
+    - ./data:/data
+    - ./schemas:/schemas
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -283,6 +290,18 @@ services:
       - "2376:2375"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
+  # Creates a static file server that can be used for testing api requests.
+  # Put files in ./sample-data
+  # Files will be accessbile in DAGs using http://sample-data:8081/<filename>
+  sample-data:
+    image: halverneus/static-file-server
+    environment:
+      - PORT=8081
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./sample-data:/web
 
 volumes:
   postgres-db-volume:
