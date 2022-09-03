@@ -1,4 +1,5 @@
 """NIST CVE demo DAG"""
+# pylint: disable=pointless-statement
 import os
 import json
 
@@ -47,21 +48,18 @@ import pendulum
 #   - how many validation errors are acceptable before entire run is cancelled?
 #   - failure threshold for: storage, transform, load
 
-args = {
-    "owner": "eb",
-}
 
-
-def _json_load(filename):
-    with open(filename) as f:
-        return json.load(f)
+def read_json(filename):
+    """Read json file"""
+    with open(filename, "r", encoding="utf-8") as _file:
+        return json.load(_file)
 
 
 gcp_project_id = os.environ.get("NISTY_GCP_PROJECT")
 gcp_data_set = os.environ.get("NISTY_GCP_DATA_SET")
 bucket = os.environ.get("NISTY_GCP_BUCKET")
 table_id = f"{gcp_project_id}.{gcp_data_set}.cves"
-table_schema = _json_load("/schemas/nist_cve.json")
+table_schema = read_json("/schemas/nist_cve.json")
 
 
 def _transform(**context):
@@ -71,10 +69,10 @@ def _transform(**context):
     # - run in resource constrained env
     context["data_path"] = "/data"
     path = context["data_path"] + "/" + context["run_id"] + "/raw.json"
-    data = _json_load(path)
+    data = read_json(path)
 
     out_path = context["data_path"] + "/" + context["run_id"] + "/data.jsonlines"
-    with open(out_path, "w") as out:
+    with open(out_path, "w", encoding="utf-8") as out:
         for cve in data["result"]["CVE_Items"]:
             row = json.dumps(cve)
             out.write(row + "\n")  #
@@ -82,8 +80,6 @@ def _transform(**context):
 
 with DAG(
     dag_id="nist_cve",
-    default_args=args,
-    # schedule_interval='0 5 * * *',
     start_date=pendulum.today("UTC").add(days=-1),
     user_defined_macros={
         "bucket": bucket,
@@ -96,16 +92,14 @@ with DAG(
         task_id="prepare",
         bash_command="mkdir -p {{ data_path }}/{{run_id}}",
     )
-    # prepare = DummyOperator(task_id='prepare')
 
     # get API data, save locally
-    # Note: add a TTL on these buckets that expire much quicker than the later transformations (save $)
-    # Each transform becomes more valuable; use cost-saving measures like S3 glacier, bucket TTL/expiry, compression
+    # Note: add an expiry TTL on these buckets  (save $)
+    # use cost-saving measures like S3 glacier, bucket TTL/expiry, compression
     extract = BashOperator(
         task_id="extract",
         bash_command="curl {{ nist_cve_endpoint }} --output {{ data_path }}/{{ run_id }}/raw.json",
     )
-    # extract = DummyOperator(task_id='extract')
 
     # basically this copies the local API response into the data lake
     # if any of the downstream steps fail, its important to have this source data to retry
@@ -115,7 +109,6 @@ with DAG(
         dst="{{ run_id }}/raw.json",
         bucket="{{ bucket }}",
     )
-    # store_raw = DummyOperator(task_id="store_raw")
 
     # Transform from raw into JSONLines (required for BigQuery load)
     # Alternatives:
@@ -129,7 +122,6 @@ with DAG(
         python_callable=_transform,
         dag=dag,
     )
-    # transform = DummyOperator(task_id='transform')
 
     store_transform = LocalFilesystemToGCSOperator(
         task_id="store_transform",
@@ -137,7 +129,6 @@ with DAG(
         dst="{{ run_id }}/lines.jsonlines",
         bucket="{{ bucket }}",
     )
-    # store_transform = DummyOperator(task_id="store_transform")
 
     # Generate schema with:
     # bq show --schema --format=prettyjson myprojectid:mydataset.mytable > schemas/nist_cve.json
@@ -150,9 +141,5 @@ with DAG(
         write_disposition="WRITE_TRUNCATE",
         schema_fields=table_schema,
     )
-    # load = DummyOperator(task_id="load")
 
     prepare >> extract >> store_raw >> transform >> store_transform >> load
-
-if __name__ == "__main__":
-    dag.cli()

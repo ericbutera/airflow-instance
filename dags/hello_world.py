@@ -1,15 +1,11 @@
+"""Hello world."""
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 import pendulum
 
-args = {
-    "owner": "eb",
-}
-
 with DAG(
-    dag_id="hello_world_airflow",
-    default_args=args,
-    schedule_interval="0 5 * * *",
+    dag_id="hello_world",
+    schedule_interval="0 2 * * *",
     start_date=pendulum.today("UTC").add(days=-1),
 ) as dag:
 
@@ -23,7 +19,4 @@ with DAG(
         bash_command="echo World",
     )
 
-    print_hello >> print_world
-
-if __name__ == "__main__":
-    dag.cli()
+    print_hello >> print_world  # pylint: disable=pointless-statement
