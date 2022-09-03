@@ -163,3 +163,4 @@ logs/*
 data/*
 .vscode/
 .env
+data/*
