@@ -1,26 +1,26 @@
 from airflow import DAG
-from airflow.operators.bash_operator import BashOperator
-from airflow.utils.dates import days_ago
+from airflow.operators.bash import BashOperator
+import pendulum
 
 args = {
-    'owner': 'eb',
+    "owner": "eb",
 }
 
 with DAG(
-    dag_id='hello_world_airflow',
+    dag_id="hello_world_airflow",
     default_args=args,
-    schedule_interval='0 5 * * *',
-    start_date=days_ago(1),
+    schedule_interval="0 5 * * *",
+    start_date=pendulum.today("UTC").add(days=-1),
 ) as dag:
 
     print_hello = BashOperator(
-        task_id='print_hello',
-        bash_command='echo Hello',
+        task_id="print_hello",
+        bash_command="echo Hello",
     )
 
     print_world = BashOperator(
-        task_id='print_world',
-        bash_command='echo World',
+        task_id="print_world",
+        bash_command="echo World",
     )
 
     print_hello >> print_world

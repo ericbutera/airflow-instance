@@ -3,12 +3,13 @@ import os
 import json
 
 from airflow import DAG
-from airflow.operators.bash_operator import BashOperator
-from airflow.operators.dummy_operator import DummyOperator
-from airflow.utils.dates import days_ago
+from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
-from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
+from airflow.providers.google.cloud.transfers.local_to_gcs import (
+    LocalFilesystemToGCSOperator,
+)
 from airflow.contrib.operators.gcs_to_bq import GoogleCloudStorageToBigQueryOperator
+import pendulum
 
 # Use
 # 1. create a connection called `google_cloud_default` for GCP in
@@ -47,25 +48,28 @@ from airflow.contrib.operators.gcs_to_bq import GoogleCloudStorageToBigQueryOper
 #   - failure threshold for: storage, transform, load
 
 args = {
-    'owner': 'eb',
+    "owner": "eb",
 }
+
 
 def _json_load(filename):
     with open(filename) as f:
         return json.load(f)
 
-gcp_project_id = os.environ.get('NISTY_GCP_PROJECT')
-gcp_data_set = os.environ.get('NISTY_GCP_DATA_SET')
-bucket = os.environ.get('NISTY_GCP_BUCKET')
+
+gcp_project_id = os.environ.get("NISTY_GCP_PROJECT")
+gcp_data_set = os.environ.get("NISTY_GCP_DATA_SET")
+bucket = os.environ.get("NISTY_GCP_BUCKET")
 table_id = f"{gcp_project_id}.{gcp_data_set}.cves"
 table_schema = _json_load("/schemas/nist_cve.json")
+
 
 def _transform(**context):
     # - fix data_path
     # - harden against errors
     # - stream, not bulk load
     # - run in resource constrained env
-    context['data_path'] = '/data'
+    context["data_path"] = "/data"
     path = context["data_path"] + "/" + context["run_id"] + "/raw.json"
     data = _json_load(path)
 
@@ -73,22 +77,23 @@ def _transform(**context):
     with open(out_path, "w") as out:
         for cve in data["result"]["CVE_Items"]:
             row = json.dumps(cve)
-            out.write(row + "\n") #
+            out.write(row + "\n")  #
+
 
 with DAG(
-    dag_id='nist_cve',
+    dag_id="nist_cve",
     default_args=args,
     # schedule_interval='0 5 * * *',
-    start_date=days_ago(1),
+    start_date=pendulum.today("UTC").add(days=-1),
     user_defined_macros={
         "bucket": bucket,
         "data_path": "/data",
         "nist_cve_endpoint": "http://sample-data:8081/nist_cve_full.json"
         # "nist_cve_endpoint": "https://services.nvd.nist.gov/rest/json/cves/1.0/"
-    }
+    },
 ) as dag:
     prepare = BashOperator(
-        task_id='prepare',
+        task_id="prepare",
         bash_command="mkdir -p {{ data_path }}/{{run_id}}",
     )
     # prepare = DummyOperator(task_id='prepare')
@@ -97,8 +102,8 @@ with DAG(
     # Note: add a TTL on these buckets that expire much quicker than the later transformations (save $)
     # Each transform becomes more valuable; use cost-saving measures like S3 glacier, bucket TTL/expiry, compression
     extract = BashOperator(
-        task_id='extract',
-        bash_command='curl {{ nist_cve_endpoint }} --output {{ data_path }}/{{ run_id }}/raw.json',
+        task_id="extract",
+        bash_command="curl {{ nist_cve_endpoint }} --output {{ data_path }}/{{ run_id }}/raw.json",
     )
     # extract = DummyOperator(task_id='extract')
 
@@ -120,7 +125,7 @@ with DAG(
     # - Move this to a cluster with explicit resource limits.
     # - PythonOperators are a bad idea, can easily lead to OOM situations
     transform = PythonOperator(
-        task_id='transform',
+        task_id="transform",
         python_callable=_transform,
         dag=dag,
     )
@@ -137,13 +142,13 @@ with DAG(
     # Generate schema with:
     # bq show --schema --format=prettyjson myprojectid:mydataset.mytable > schemas/nist_cve.json
     load = GoogleCloudStorageToBigQueryOperator(
-        task_id                             = "load",
-        bucket                              = "{{ bucket }}",
-        source_objects                      = ["{{ run_id }}/*.jsonlines"],
-        destination_project_dataset_table   = table_id,
-        source_format                       = "NEWLINE_DELIMITED_JSON",
-        write_disposition                   = 'WRITE_TRUNCATE',
-        schema_fields                       = table_schema,
+        task_id="load",
+        bucket="{{ bucket }}",
+        source_objects=["{{ run_id }}/*.jsonlines"],
+        destination_project_dataset_table=table_id,
+        source_format="NEWLINE_DELIMITED_JSON",
+        write_disposition="WRITE_TRUNCATE",
+        schema_fields=table_schema,
     )
     # load = DummyOperator(task_id="load")
 
