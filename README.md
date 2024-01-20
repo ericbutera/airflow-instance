@@ -8,7 +8,7 @@ Local development environment for Airflow.
 
 Run `make setup` then `make run`
 
-Navigate to <http://localhost:8080>. Creds: `admin:admin`
+Navigate to <http://localhost:8080>. Creds: `airflow:airflow`
 
 ## Resources
 
